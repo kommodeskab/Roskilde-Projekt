@@ -4,10 +4,19 @@ from datetime import datetime, timedelta
 import gspread
 from gspread import Worksheet
 from oauth2client.service_account import ServiceAccountCredentials
-import pandas as pd
 
 COLUMNS = ["device_name", "location", "timestamp", "crowd_count"]
 SHEET_NAME = "data"
+
+day_to_datetime = {
+    'Sunday':       datetime(2025, 6, 29),
+    'Monday':       datetime(2025, 6, 30),
+    'Tuesday':      datetime(2025, 7, 1),
+    'Wednesday':    datetime(2025, 7, 2),
+    'Thursday':     datetime(2025, 7, 3),
+    'Friday':       datetime(2025, 7, 4),
+    'Saturday':     datetime(2025, 7, 5)
+}
 
 def scrape_schedule() -> list:
     """
@@ -16,10 +25,7 @@ def scrape_schedule() -> list:
     """
     schedule = []
 
-    weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-    first_date = datetime(2025, 6, 29)
-
-    for i, day in enumerate(weekdays):
+    for day in day_to_datetime.keys():
         url = f"https://www.roskilde-festival.dk/en/lineup/schedule?filter={day}"
         response = requests.get(url)
             
@@ -38,7 +44,7 @@ def scrape_schedule() -> list:
             location = time_location[1].strip() if len(time_location) > 1 else "Unknown Location"
             hour, minute = map(int, time.split('.'))
             
-            event_time = first_date + timedelta(days=i, hours=hour, minutes=minute)
+            event_time = day_to_datetime[day] + timedelta(hours=hour, minutes=minute)
             event = {
                 'title': title,
                 'time': event_time,
@@ -55,17 +61,21 @@ def get_sheet() -> Worksheet:
     sheet = client.open(SHEET_NAME).sheet1
     return sheet
 
-def read_data() -> pd.DataFrame:
+def read_data():
+    import pandas as pd
     sheet = get_sheet()
     data = sheet.get_all_records()
-    df = pd.DataFrame(data[1:], columns=data[0])
+    if not data:
+        # returns an empty DataFrame
+        return pd.DataFrame(columns=COLUMNS)
+    df = pd.DataFrame(data, columns=COLUMNS)
     df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df = df.sort_values(by='timestamp').reset_index(drop=True)
     return df
 
-def write_data(data : dict) -> None:
-    assert isinstance(data, dict), "Data must be a dictionary"
-    assert len(data) == len(COLUMNS), "Data length must match number of columns"
-    assert all(key in COLUMNS for key in data.keys()), "Data keys must match column names"
+def write_data(data : dict | list[dict]) -> None:
+    if isinstance(data, dict):
+        data = [data]
     
     sheet = get_sheet()
     header = sheet.row_values(1)
@@ -75,13 +85,14 @@ def write_data(data : dict) -> None:
     elif header != COLUMNS:
         raise ValueError(f"Header mismatch: {header} != {COLUMNS}")
         
-    data = [data[column] for column in COLUMNS]
-    sheet.append_row(data)
+    # convert data to a list of lists
+    data = [list(item.values()) for item in data]
+    sheet.append_rows(data, value_input_option='USER_ENTERED')
     
 if __name__ == "__main__":
-    write_data({
+    write_data([{
         "device_name": "Test Device",
         "location": "Test Location",
         "timestamp": datetime.now().isoformat(),
         "crowd_count": 100
-    })
+    }])
