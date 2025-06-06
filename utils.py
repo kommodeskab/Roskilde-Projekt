@@ -61,18 +61,6 @@ def get_sheet() -> Worksheet:
     sheet = client.open(SHEET_NAME).sheet1
     return sheet
 
-def read_data():
-    import pandas as pd
-    sheet = get_sheet()
-    data = sheet.get_all_records()
-    if not data:
-        # returns an empty DataFrame
-        return pd.DataFrame(columns=COLUMNS)
-    df = pd.DataFrame(data, columns=COLUMNS)
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
-    df = df.sort_values(by='timestamp').reset_index(drop=True)
-    return df
-
 def write_data(data : dict | list[dict]) -> None:
     if isinstance(data, dict):
         data = [data]

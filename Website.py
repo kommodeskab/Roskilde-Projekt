@@ -1,5 +1,5 @@
 import streamlit as st
-from utils import read_data
+from utils import get_sheet, COLUMNS
 import matplotlib.pyplot as plt
 import mpld3
 import streamlit.components.v1 as components
@@ -9,11 +9,19 @@ import pandas as pd
 st.title("Crowd Monitoring Dashboard")
 st.write("This dashboard displays crowd monitoring data from the Google Sheet.")
 
-@st.cache_data(ttl=10, show_spinner=False)
-def cached_read_data():
-    return read_data()
+@st.cache_data(ttl=600, show_spinner=False)
+def read_data() -> pd.DataFrame:
+    sheet = get_sheet()
+    data = sheet.get_all_records()
+    if not data:
+        # returns an empty DataFrame
+        return pd.DataFrame(columns=COLUMNS)
+    df = pd.DataFrame(data, columns=COLUMNS)
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df = df.sort_values(by='timestamp').reset_index(drop=True)
+    return df
 
-data = cached_read_data()
+data = read_data()
 
 if data.empty:
     st.write("No data available.")
