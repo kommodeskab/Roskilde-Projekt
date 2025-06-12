@@ -18,7 +18,7 @@ day_to_datetime = {
     'Saturday':     datetime(2025, 7, 5)
 }
 
-def scrape_schedule() -> list:
+def scrape_schedule() -> list[dict]:
     """
     Scrapes the schedule for the festival and returns it as a dictionary.
     The schedule is a list of dictionaries, each containing the title, time, and location of an event.

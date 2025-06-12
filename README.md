@@ -48,3 +48,45 @@ pip install -r requirements.txt
   streamlit run website.py
   ```
 ---
+
+## How to set up Raspberry Pi
+Install dependecies:
+```bash
+sudo apt update
+sudo apt install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev git
+```
+
+Install PyEnv:
+```bash
+curl https://pyenv.run | bash
+```
+
+Open `bashrc` and add some important stuff:
+```bash
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init --path)"
+eval "$(pyenv init -)"
+```
+Save by pressing `Ctrl+0` and then `Enter`. Exit by pressing `Ctrl+X`.
+
+Install and activate a (newer) version of Python, preferably `3.11.9`.
+```bash
+pyenv install 3.11.9
+pyenv global 3.11.9
+pyenv --version
+```
+This should print `3.11.9` as the currently installed python version. 
+
+Clone this repository and step into the project:
+```bash
+git clone https://github.com/kommodeskab/Roskilde-Projekt.git
+cd Roskilde-Projekt
+```
+
+Make a new virtual environment and install the dependecies:
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
