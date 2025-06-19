@@ -61,6 +61,11 @@ Install PyEnv:
 curl https://pyenv.run | bash
 ```
 
+Make sure following dependency is installed:
+```bash
+sudo apt-get install libffi-dev
+```
+
 Open `bashrc` and add some important stuff:
 ```bash
 export PYENV_ROOT="$HOME/.pyenv"
@@ -90,3 +95,10 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+
+### Communicating with Raspberry Pi
+To copy files from the Raspberry Pi to your laptop, write:
+```bash
+scp <device name>@<device ip address>:<path to file>
+```
+Where device name is the name of the Raspberry and device ip is the ip of the Raspberry.
