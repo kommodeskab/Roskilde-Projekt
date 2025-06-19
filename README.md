@@ -75,10 +75,10 @@ eval "$(pyenv init -)"
 ```
 Save by pressing `Ctrl+0` and then `Enter`. Exit by pressing `Ctrl+X`.
 
-Install and activate a (newer) version of Python, preferably `3.11.9`.
+Install and activate a (newer) version of Python, preferably `3.11`.
 ```bash
-pyenv install 3.11.9
-pyenv global 3.11.9
+pyenv install 3.11
+pyenv global 3.11
 pyenv --version
 ```
 This should print `3.11.9` as the currently installed python version. 
@@ -94,6 +94,29 @@ Make a new virtual environment and install the dependecies:
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+```
+
+### Setting up git
+Make sure `git` is installed:
+```bash
+sudo apt install git
+```
+Generate a new ssh-key on the raspberry:
+```
+ssh-keygen -t ed25519 -C "your_email@example.com"
+```
+Add your SSH key to the ssh-agent 
+```bash
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+```
+Here, you can see the ssh-key:
+```bash
+cat ~/.ssh/id_ed25519.pub
+```
+Ideally, copy this file to your laptop using the below code (see under 'Communicating with Raspberry Pi).
+```bash
+scp <device name>@<device ip address>:~/.ssh/id_ed25519 .
 ```
 
 ### Communicating with Raspberry Pi
