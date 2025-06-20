@@ -1,10 +1,11 @@
 import streamlit as st
-from utils import get_sheet, COLUMNS, triangulate_positions, DEVICE_POSITIONS
+from utils import get_sheet, COLUMNS, DEVICE_POSITIONS
 import matplotlib.pyplot as plt
 import mpld3
 import streamlit.components.v1 as components
 import pandas as pd
 from datetime import timedelta
+from triangulate import triangulate_positions
 
 # 'streamlit run website.py' to run the dashboard
 st.title("Crowd Monitoring Dashboard")

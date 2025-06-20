@@ -192,3 +192,12 @@ After reboot, verify monitor mode with:
 iwconfig wlan1
 ```
 
+### Update GIT repository
+Forget local changes:
+```bash
+git reset --hard
+```
+Then pull new changes from main:
+```bash
+gil pull
+```
