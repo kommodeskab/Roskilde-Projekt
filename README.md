@@ -118,6 +118,7 @@ Ideally, copy this file to your laptop using the below code (see under 'Communic
 ```bash
 scp <device name>@<device ip address>:~/.ssh/id_ed25519 .
 ```
+Add said key to your list of ssh-keys on github.com. 
 
 ### Communicating with Raspberry Pi
 To copy files from the Raspberry Pi to your laptop, write:
@@ -125,3 +126,69 @@ To copy files from the Raspberry Pi to your laptop, write:
 scp <device name>@<device ip address>:<path to file>
 ```
 Where device name is the name of the Raspberry and device ip is the ip of the Raspberry.
+Likewise, sending files to the raspberry can be done by (for example):
+```bash
+ scp .\excel_key.json census1@192.168.0.65:/home/census1/Roskilde-Projekt
+```
+
+### Start sniffing
+Needs to be in sudo mode to sniff. 
+```bash
+sudo $(which python) sniff.py
+```
+
+
+### Set Raspbery Pi into monitor mode automatically on boot
+1. **Create the monitor mode script** `/usr/local/bin/set_monitor_mode.sh`:
+
+```bash
+#!/bin/bash
+sleep 5
+ip link set wlan1 down
+iw dev wlan1 set type monitor
+ip link set wlan1 up
+```
+
+Make it executable:
+
+```bash
+sudo chmod +x /usr/local/bin/set_monitor_mode.sh
+```
+
+2. **Create a systemd service** `/etc/systemd/system/set_monitor_mode.service`:
+
+```ini
+[Unit]
+Description=Set wlan1 to monitor mode
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/set_monitor_mode.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+```
+
+3. **Enable and start the service:**
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable set_monitor_mode.service
+sudo systemctl start set_monitor_mode.service
+```
+
+4. **Reboot to test:**
+
+```bash
+sudo reboot
+```
+
+After reboot, verify monitor mode with:
+
+```bash
+iwconfig wlan1
+```
+

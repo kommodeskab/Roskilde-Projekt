@@ -1,20 +1,18 @@
 import hashlib
 from scapy.all import sniff, Dot11
-from collections import defaultdict
+from scapy.packet import Packet
+from functools import partial
 
 # Set your interface and scan duration
-INTERFACE = 'wlan0mon'
-SCAN_DURATION = 10  # seconds
+INTERFACE = 'wlan1'
+SCAN_DURATION = 50  # seconds
 
-# Dictionary to store strongest RSSI for each device (or "None")
-device_rssi = {}
-
-def hash_mac(mac):
+def hash_mac(mac : str) -> str:
     """Hash a MAC address using SHA-256 and return as hex string"""
     return hashlib.sha256(mac.encode()).hexdigest()
 
-def packet_handler(pkt):
-    if pkt.haslayer(Dot11) and pkt.type in [0]:  # management frame
+def packet_handler(pkt : Packet, device_rssi : dict) -> None:
+    if pkt.haslayer(Dot11) and pkt.type == 0:  # management frame
         mac = pkt.addr2
         if mac:
             mac_hash = hash_mac(mac)
@@ -24,10 +22,12 @@ def packet_handler(pkt):
             except:
                 rssi = None
 
-            device_rssi[mac_hash] = rssi if rssi is not None else "None"
+            if rssi is not None:
+                device_rssi[mac_hash] = rssi
+            
+def sniff_packets(interface : str, duration : int):
+    device_rssi = {}
+    prn = partial(packet_handler, device_rssi=device_rssi)
+    sniff(iface=interface, prn=prn, timeout=duration, store=0)
+    return device_rssi
 
-print(f"Sniffing on {INTERFACE} for {SCAN_DURATION} seconds...")
-sniff(iface=INTERFACE, prn=packet_handler, timeout=SCAN_DURATION, store=0)
-
-print("\nDetected devices (hashed MAC -> RSSI):")
-print(device_rssi)

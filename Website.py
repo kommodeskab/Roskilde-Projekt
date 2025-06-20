@@ -1,9 +1,10 @@
 import streamlit as st
-from utils import get_sheet, COLUMNS
+from utils import get_sheet, COLUMNS, triangulate_positions, DEVICE_POSITIONS
 import matplotlib.pyplot as plt
 import mpld3
 import streamlit.components.v1 as components
 import pandas as pd
+from datetime import timedelta
 
 # 'streamlit run website.py' to run the dashboard
 st.title("Crowd Monitoring Dashboard")
@@ -27,31 +28,44 @@ if data.empty:
     st.write("No data available.")
     st.rerun()
     
-locations = data['location'].unique()
-st.sidebar.title("Filter Options")
-selected_location = st.sidebar.selectbox("Select Location", list(locations), key="location_filter")
+timestamps = data['timestamp'].unique()
+unique_days = data['timestamp'].dt.date.unique()
+selected_day = st.selectbox("Select a day", options=unique_days, key="day_selector")
+filtered_data = data[data['timestamp'].dt.date == selected_day]
+filtered_data : pd.DataFrame
 
-st.sidebar.title("Other options")
+# make a slider for selecting the current time
+current_time = st.slider(
+    "Select a time",
+    min_value=filtered_data['timestamp'].min().time(),
+    max_value=filtered_data['timestamp'].max().time(),
+    value=filtered_data['timestamp'].min().time(),
+    format="HH:mm",
+    step=timedelta(minutes=1),
+)
 
-if st.sidebar.checkbox("Show Raw Data", value=False, key="raw_data_checkbox"):
-    st.dataframe(data)
-    
-if st.sidebar.checkbox("Show Data Summary", value=False, key="data_summary_checkbox"):
-    st.write(data.describe())
-    
-if st.sidebar.button("Refresh Data", key="refresh_data_button"):
-    st.cache_data.clear()
-    st.rerun()
+# Filter the data based on the selected time
+filtered_data = filtered_data[filtered_data['timestamp'].dt.time == current_time]
+crowd_data = filtered_data['crowd_data'].apply(eval)
 
-data = data[data['location'] == selected_location]
+# convert the crowd_data to a numpy array
+# the crowd_data is a dictionary with device names as keys and distances as values
+crowd_data = pd.DataFrame(crowd_data.tolist()).to_numpy().T
+estimated_positions = triangulate_positions(
+    crowd_data,
+    DEVICE_POSITIONS['device1'],
+    DEVICE_POSITIONS['device2'],
+    DEVICE_POSITIONS['device3'],
+)
 
-diff = data['timestamp'].diff().fillna(pd.Timedelta(seconds=0))
-where = diff < pd.Timedelta(minutes=10)
+fig, ax = plt.subplots()
+plt.scatter(estimated_positions[:, 0], estimated_positions[:, 1], c='blue', s=10, alpha=0.5)
+for device, position in DEVICE_POSITIONS.items():
+    ax.scatter(*position, label=device, s=100, edgecolor='black')
+plt.xlim(-3, 3)
+plt.ylim(-3, 3)
+html_fig = mpld3.fig_to_html(fig)
+components.html(html_fig, height=500, width=700)
+print(estimated_positions.shape)
 
-fig = plt.figure()
-plt.fill_between(data['timestamp'], data['crowd_count'], color='skyblue', where=where)
-plt.xlabel('Timestamp')
-plt.ylabel('Crowd Count')
-plt.grid(alpha=0.1)
-fig_html = mpld3.fig_to_html(fig)
-components.html(fig_html, height=500)
+st.dataframe(filtered_data, use_container_width=True)

@@ -2,35 +2,37 @@ import time
 from utils import write_data
 from argparse import ArgumentParser
 from datetime import datetime
+from sniff import sniff_packets
 
-def get_crowd_count() -> int:
-    # TODO: Replace with actual crowd counting logic
-    return 0
+def get_crowd_data() -> dict[str, int]:
+    interface = 'wlan1' 
+    scan_duration = 50
+    return sniff_packets(interface, scan_duration)    
 
 def main():
     parser = ArgumentParser()
     parser.add_argument("--device_name", type=str, required=True)
-    parser.add_argument("--location", type=str, required=True)
-    parser.add_argument("--interval", type=float, default=1, help="Interval in minutes to send data")
     
     args = parser.parse_args()
     device_name : str = args.device_name
-    location : str = args.location
-    interval : int = float(args.interval)
     
-    now = datetime.now()    
-    
+    now = datetime.now()
+    print(f"Waiting {60 - now.second} seconds until the next minute begins...")
+    time.sleep(60 - now.second)
+        
     while True:
-        crowd_count = get_crowd_count()
-        timestamp = datetime.now().isoformat()
+        crowd_data = get_crowd_data()
+        # format the timestamp as 'YYYY-MM-DD HH:MM'
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
+        
         data = {
             "device_name": device_name,
-            "location": location,
             "timestamp": timestamp,
-            "crowd_count": crowd_count
+            "crowd_data": str(crowd_data)
         }
         write_data(data)
-        time.sleep(interval * 60)
+        print(f"Data written at {timestamp}: {crowd_data}")
+        time.sleep(60)
         
 if __name__ == "__main__":
     main()
