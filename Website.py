@@ -19,6 +19,8 @@ def read_data() -> pd.DataFrame:
         # returns an empty DataFrame
         return pd.DataFrame(columns=COLUMNS)
     df = pd.DataFrame(data, columns=COLUMNS)
+    df['crowd_data'] = df['crowd_data'].apply(eval) 
+    df['crowd_count'] = df['crowd_data'].apply(len)
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     df = df.sort_values(by='timestamp').reset_index(drop=True)
     return df
@@ -32,41 +34,40 @@ if data.empty:
 timestamps = data['timestamp'].unique()
 unique_days = data['timestamp'].dt.date.unique()
 selected_day = st.selectbox("Select a day", options=unique_days, key="day_selector")
-filtered_data = data[data['timestamp'].dt.date == selected_day]
-filtered_data : pd.DataFrame
+filtered_data = data.loc[data['timestamp'].dt.date == selected_day]
 
-# make a slider for selecting the current time
-current_time = st.slider(
-    "Select a time",
-    min_value=filtered_data['timestamp'].min().time(),
-    max_value=filtered_data['timestamp'].max().time(),
-    value=filtered_data['timestamp'].min().time(),
-    format="HH:mm",
-    step=timedelta(minutes=1),
+plot_option = st.radio(
+    "Select plot type",
+    options=["Crowd Count", "Triangulated Positions"],
+    key="plot_type"
 )
 
-# Filter the data based on the selected time
-filtered_data = filtered_data[filtered_data['timestamp'].dt.time == current_time]
-crowd_data = filtered_data['crowd_data'].apply(eval)
+colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
-# convert the crowd_data to a numpy array
-# the crowd_data is a dictionary with device names as keys and distances as values
-crowd_data = pd.DataFrame(crowd_data.tolist()).to_numpy().T
-estimated_positions = triangulate_positions(
-    crowd_data,
-    DEVICE_POSITIONS['device1'],
-    DEVICE_POSITIONS['device2'],
-    DEVICE_POSITIONS['device3'],
-)
-
-fig, ax = plt.subplots()
-plt.scatter(estimated_positions[:, 0], estimated_positions[:, 1], c='blue', s=10, alpha=0.5)
-for device, position in DEVICE_POSITIONS.items():
-    ax.scatter(*position, label=device, s=100, edgecolor='black')
-plt.xlim(-3, 3)
-plt.ylim(-3, 3)
-html_fig = mpld3.fig_to_html(fig)
-components.html(html_fig, height=500, width=700)
-print(estimated_positions.shape)
-
-st.dataframe(filtered_data, use_container_width=True)
+if plot_option == "Crowd Count":
+    devices = filtered_data['device_name'].unique()
+    # for each device, plot the crowd count over time
+    
+    for device, color in zip(devices, colors):
+        device_data = filtered_data.loc[filtered_data['device_name'] == device]
+        device_data['timediff'] = device_data['timestamp'].diff()
+        breaks = device_data['timediff'] > timedelta(minutes=10)
+        device_data['group'] = breaks.cumsum()
+        
+        for i, (group, group_data) in enumerate(device_data.groupby('group')):
+            label = device if i == 0 else None
+            plt.plot(group_data['timestamp'], group_data['crowd_count'], label=label, linestyle='-', color=color)
+        
+    plt.xlabel("Time")
+    plt.ylabel("Crowd Count")
+    plt.title(f"Crowd Count on {selected_day}")
+    plt.xticks(rotation=45)
+    plt.legend(loc='upper left')
+    plt.tight_layout()
+    
+    # make interactive with mpld3
+    mpld3_fig = mpld3.fig_to_html(plt.gcf())
+    components.html(mpld3_fig, height=600)
+    
+else:
+    raise NotImplementedError()

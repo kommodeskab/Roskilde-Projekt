@@ -11,3 +11,9 @@ sudo systemctl start wifi-sniffer.service
 # and check the status
 systemctl status wifi-sniffer.service
 journalctl -u wifi-sniffer.service -f
+
+# the reboot to check if it works
+reboot
+
+# and check the log file
+sudo tail -f /var/log/wifi_sniffer_startup.log

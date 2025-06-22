@@ -1,16 +1,16 @@
 [Unit]
 Description=Wi-Fi Sniffer Monitor Mode and Python Script
-After=network.target multi-user.target # Ensures network and multi-user services are up
+After=network.target multi-user.target
 
 [Service]
-Type=simple # Specifies that the ExecStart command is the main process and runs in the foreground
+Type=simple
 ExecStart=/usr/local/bin/start_wifi_sniffer.sh
-WorkingDirectory=/home/census1/Roskilde-Projekt/ # IMPORTANT: Use your actual absolute path here
-Environment="PYTHONUNBUFFERED=1" # Ensures Python's print() statements are unbuffered to the journal
-StandardOutput=journal # Redirects standard output to the systemd journal
-StandardError=journal  # Redirects standard error to the systemd journal
-Restart=on-failure     # Automatically restart if the script exits with an error
-RestartSec=5           # Wait 5 seconds before attempting to restart
+WorkingDirectory=/home/census1/Roskilde-Projekt/
+Environment="PYTHONUNBUFFERED=1"
+StandardOutput=journal
+StandardError=journal
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target # Ensures the service starts when the system enters multi-user mode
