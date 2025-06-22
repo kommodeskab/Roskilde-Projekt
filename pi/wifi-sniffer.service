@@ -1,36 +1,16 @@
 [Unit]
 Description=Wi-Fi Sniffer Monitor Mode and Python Script
-After=network.target multi-user.target # Ensures network services are up
+After=network.target multi-user.target # Ensures network and multi-user services are up
 
 [Service]
-# Type=forking if your script forks a background process and the main script exits.
-# Type=simple if your script runs in the foreground and systemd should manage it.
-# Type=oneshot if your script runs once and exits, and you want systemd to consider it "active".
-# For your Python script that sniffs packets, it will likely run continuously, so Type=simple or Type=forking (if it daemonizes itself) is appropriate.
-Type=simple
-# If your script needs root privileges for the `ip` and `iw` commands,
-# and you want the python script to run as root:
+Type=simple # Specifies that the ExecStart command is the main process and runs in the foreground
 ExecStart=/usr/local/bin/start_wifi_sniffer.sh
-
-# If you want the python script part to run as a specific non-root user
-# after the network commands (which *must* be root), you'd need to modify
-# start_wifi_sniffer.sh to handle privilege dropping.
-# A simpler way is to have the systemd service run as root, and then inside
-# start_wifi_sniffer.sh, use `sudo -u youruser` for the python command if needed.
-# However, `ip link` and `iw dev` require root. So running the whole script as root
-# is usually easier, then you can decide if the Python script itself needs to drop privileges.
-# Given it's sniffing, it probably needs root for the network operations anyway.
-
-# Set working directory
-WorkingDirectory=/home/$(whoami)/Roskilde-Projekt/ # Or wherever your project is located
-
-# StandardOutput and StandardError redirect to journald for logging
-StandardOutput=journal
-StandardError=journal
-
-# Enable automatic restart if the script exits abnormally
-Restart=on-failure
-RestartSec=5
+WorkingDirectory=/home/census1/Roskilde-Projekt/ # IMPORTANT: Use your actual absolute path here
+Environment="PYTHONUNBUFFERED=1" # Ensures Python's print() statements are unbuffered to the journal
+StandardOutput=journal # Redirects standard output to the systemd journal
+StandardError=journal  # Redirects standard error to the systemd journal
+Restart=on-failure     # Automatically restart if the script exits with an error
+RestartSec=5           # Wait 5 seconds before attempting to restart
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=multi-user.target # Ensures the service starts when the system enters multi-user mode

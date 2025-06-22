@@ -6,7 +6,7 @@ from sniff import sniff_packets
 
 def get_crowd_data() -> dict[str, int]:
     interface = 'wlan1' 
-    scan_duration = 50
+    scan_duration = 60 
     return sniff_packets(interface, scan_duration)    
 
 def main():
@@ -17,7 +17,7 @@ def main():
     device_name : str = args.device_name
     
     now = datetime.now()
-    print(f"Waiting {60 - now.second} seconds until the next minute begins...")
+    print(f"Waiting {60 - now.second} seconds until the next minute begins...", flush=True)
     time.sleep(60 - now.second)
         
     while True:
@@ -30,9 +30,13 @@ def main():
             "timestamp": timestamp,
             "crowd_data": str(crowd_data)
         }
-        write_data(data)
-        print(f"Data written at {timestamp}: {crowd_data}")
-        time.sleep(60)
+        try:
+            write_data(data)
+        except Exception as e:
+            print(f"Error writing data: {e}", flush=True)
+            continue
+        
+        print(f"Data written at {timestamp}: {crowd_data}", flush=True)
         
 if __name__ == "__main__":
     main()
