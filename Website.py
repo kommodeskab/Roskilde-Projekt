@@ -9,7 +9,6 @@ from triangulate import triangulate_positions
 
 # 'streamlit run website.py' to run the dashboard
 st.title("Crowd Monitoring Dashboard")
-st.write("This dashboard displays crowd monitoring data from the Google Sheet.")
 
 @st.cache_data(ttl=600, show_spinner=False)
 def read_data() -> pd.DataFrame:
@@ -25,13 +24,19 @@ def read_data() -> pd.DataFrame:
     df = df.sort_values(by='timestamp').reset_index(drop=True)
     return df
 
+def rssi_to_distance(rssi : float, N : float, measured_power : float) -> float:
+    # rssi = Received Signal Strength Indicator
+    # N = device constat, usually between 2 and 4, 2 for free space, 3 for urban areas, 4 for indoor
+    # measured_power = RSSI at 1 meter distance, needs to be calibrated for each device, around -16
+    return 10 ** ((measured_power - rssi) / (10 * N))
+
 data = read_data()
 
 if data.empty:
     st.write("No data available.")
     st.rerun()
-    
-timestamps = data['timestamp'].unique()
+
+devices = data['device_name'].unique()
 unique_days = data['timestamp'].dt.date.unique()
 selected_day = st.selectbox("Select a day", options=unique_days, key="day_selector")
 filtered_data = data.loc[data['timestamp'].dt.date == selected_day]
@@ -42,26 +47,26 @@ plot_option = st.radio(
     key="plot_type"
 )
 
-colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+colors = {
+    'census1': '#1f77b4',
+    'census2': '#ff7f0e',
+    'census3': '#2ca02c',
+}
 
-if plot_option == "Crowd Count":
-    devices = filtered_data['device_name'].unique()
-    # for each device, plot the crowd count over time
+if plot_option == "Crowd Count":    
+    def moving_average(series : pd.Series, window_size : int=5) -> pd.Series:
+        return series.rolling(window=window_size, min_periods=1).mean()
     
-    for device, color in zip(devices, colors):
+    for device in devices:
         device_data = filtered_data.loc[filtered_data['device_name'] == device]
-        device_data['timediff'] = device_data['timestamp'].diff()
-        breaks = device_data['timediff'] > timedelta(minutes=10)
-        device_data['group'] = breaks.cumsum()
+        timediff = device_data['timestamp'].diff()
+        xs = device_data['timestamp']
+        ys = moving_average(device_data['crowd_count'], 10).round()
+        where = timediff < timedelta(minutes=10)
+        plt.fill_between(xs, ys, color=colors[device], alpha=0.8, label=device, where=where)
         
-        for i, (group, group_data) in enumerate(device_data.groupby('group')):
-            label = device if i == 0 else None
-            plt.plot(group_data['timestamp'], group_data['crowd_count'], label=label, linestyle='-', color=color)
-        
-    plt.xlabel("Time")
     plt.ylabel("Crowd Count")
     plt.title(f"Crowd Count on {selected_day}")
-    plt.xticks(rotation=45)
     plt.legend(loc='upper left')
     plt.tight_layout()
     
