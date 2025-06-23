@@ -21,7 +21,13 @@ def main():
     time.sleep(60 - now.second)
         
     while True:
-        crowd_data = get_crowd_data()
+        try:
+            crowd_data = get_crowd_data()
+        except Exception as e:
+            print(f"Error getting crowd data: {e} \nRetrying in 60 seconds...", flush=True)
+            time.sleep(60)
+            continue
+        
         # format the timestamp as 'YYYY-MM-DD HH:MM'
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
         
