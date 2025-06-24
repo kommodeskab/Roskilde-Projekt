@@ -135,6 +135,7 @@ See the IP address of the raspberry using:
 hostname -I
 ```
 
+
 ### Make sure that Wifi Adapter always have name 'wlan1'
 ```bash
 sudo nano /etc/udev/rules.d/70-persistent-net.rules
@@ -142,6 +143,11 @@ sudo nano /etc/udev/rules.d/70-persistent-net.rules
 Edit this file with the following line:
 ```bash
 SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="8812", NAME="wlan1"
+```
+Then, update to make changes active:
+```bash
+sudo udevadm control --reload-rules
+sudo udevadm trigger
 ```
 From now on, plugging the wifi adapter into top left USB port on a Raspberry Pi 3 B+ will result in the wifi adapter having the network interface name 'wlan1'.
 

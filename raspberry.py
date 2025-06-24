@@ -3,7 +3,7 @@ from utils import write_data
 from argparse import ArgumentParser
 from datetime import datetime
 from sniff import sniff_packets
-import subprocess
+import sys
 
 def get_crowd_data() -> dict[str, int]:
     interface = 'wlan1' 
@@ -22,7 +22,14 @@ def main():
     time.sleep(60 - now.second)
         
     while True:
-        crowd_data = get_crowd_data()
+        try:
+            crowd_data = get_crowd_data()
+        except OSError as e:
+            print(f"Error sniffing packets: {e}", flush=True)
+            sys.exit(1)
+        except Exception as e:
+            print(f"Unexpected error: {e}", flush=True)
+            sys.exit(1)
         
         # format the timestamp as 'YYYY-MM-DD HH:MM'
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
