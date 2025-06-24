@@ -44,7 +44,7 @@ def main():
             write_data(data)
         except Exception as e:
             print(f"Error writing data: {e}", flush=True)
-            continue
+            sys.exit(1)
         
         print(f"Data written at {timestamp}: {crowd_data}", flush=True)
         

@@ -55,16 +55,13 @@ Install dependecies:
 ```bash
 sudo apt update
 sudo apt install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev git
+sudo apt-upgrade -y
+sudo apt dist-upgrade -y
 ```
 
 Install PyEnv:
 ```bash
 curl https://pyenv.run | bash
-```
-
-Make sure following dependency is installed:
-```bash
-sudo apt-get install libffi-dev
 ```
 
 Open `bashrc` and add some important stuff (to make sure that pyenv is always activated on boot):
@@ -75,6 +72,10 @@ eval "$(pyenv init --path)"
 eval "$(pyenv init -)"
 ```
 
+Make sure following dependency is installed before installing python:
+```bash
+sudo apt-get install libffi-dev
+```
 Install and activate a (newer) version of Python, preferably `3.11`.
 ```bash
 pyenv install 3.11
@@ -150,6 +151,11 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger
 ```
 From now on, plugging the wifi adapter into top left USB port on a Raspberry Pi 3 B+ will result in the wifi adapter having the network interface name 'wlan1'.
+
+### Check error messages of sniffer
+```bash
+tail -f /var/log/wifi_sniffer_startup.log
+```
 
 ### Set Raspbery Pi into monitor mode and start sniffing automatically on boot
 Check the folder `\pi` to see instructions.

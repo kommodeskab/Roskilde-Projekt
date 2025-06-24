@@ -18,10 +18,12 @@ def read_data() -> pd.DataFrame:
         # returns an empty DataFrame
         return pd.DataFrame(columns=COLUMNS)
     df = pd.DataFrame(data, columns=COLUMNS)
-    df['crowd_data'] = df['crowd_data'].apply(eval) 
+    df['crowd_data'] = df['crowd_data'].apply(eval) # crowd data is stored as a string representation of a dictionary
     df['crowd_count'] = df['crowd_data'].apply(len)
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     df = df.sort_values(by='timestamp').reset_index(drop=True)
+    # drop all rows where crowd_data is an ampty dictionary
+    df = df[df['crowd_data'].apply(lambda x: len(x) > 0)]   
     return df
 
 def rssi_to_distance(rssi : float, N : float, measured_power : float) -> float:

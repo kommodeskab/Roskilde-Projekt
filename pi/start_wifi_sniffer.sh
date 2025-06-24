@@ -19,7 +19,7 @@ ip link set wlan1 up >> "$LOG_FILE" 2>&1
 # if not, exit with an error
 # the .service file will make sure that this script is run again if it fails
 if ! iw dev wlan1 info | grep -q "type monitor"; then
-    echo "$(date): Failed to set wlan1 to monitor mode after 5 attempts." >> "$LOG_FILE"
+    echo "$(date): Failed to set wlan1 to monitor mode." >> "$LOG_FILE"
     exit 1
 fi
 
