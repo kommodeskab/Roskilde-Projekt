@@ -13,10 +13,11 @@ Our project focuses on **crowd counting** at the festival, aiming to provide val
 
 ---
 
-## Getting Started
+## Getting Started on your PC
+Further instructions on setting up Raspberry below
 
 ### Prerequisites
-- **Python 3.11.9** (recommended)
+- **Python 3.11** (or similar, we have only tested 3.11)
 - [pip](https://pip.pypa.io/en/stable/)
 
 ### 1. Create a Virtual Environment
@@ -66,14 +67,13 @@ Make sure following dependency is installed:
 sudo apt-get install libffi-dev
 ```
 
-Open `bashrc` and add some important stuff:
+Open `bashrc` and add some important stuff (to make sure that pyenv is always activated on boot):
 ```bash
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init --path)"
 eval "$(pyenv init -)"
 ```
-Save by pressing `Ctrl+0` and then `Enter`. Exit by pressing `Ctrl+X`.
 
 Install and activate a (newer) version of Python, preferably `3.11`.
 ```bash
@@ -81,7 +81,7 @@ pyenv install 3.11
 pyenv global 3.11
 pyenv --version
 ```
-This should print `3.11.9` as the currently installed python version. 
+This should print `3.11.13` as the currently installed python version. 
 
 Clone this repository and step into the project:
 ```bash
@@ -93,7 +93,7 @@ Make a new virtual environment and install the dependecies:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r raspberry_requirements.txt
 ```
 
 ### Setting up git
@@ -130,67 +130,23 @@ Likewise, sending files to the raspberry can be done by (for example):
 ```bash
  scp .\excel_key.json census1@192.168.0.65:/home/census1/Roskilde-Projekt
 ```
-
-### Start sniffing
-Needs to be in sudo mode to sniff. 
+See the IP address of the raspberry using:
 ```bash
-sudo $(which python) sniff.py
+hostname -I
 ```
 
-
-### Set Raspbery Pi into monitor mode automatically on boot
-1. **Create the monitor mode script** `/usr/local/bin/set_monitor_mode.sh`:
-
+### Make sure that Wifi Adapter always have name 'wlan1'
 ```bash
-#!/bin/bash
-sleep 5
-ip link set wlan1 down
-iw dev wlan1 set type monitor
-ip link set wlan1 up
+sudo nano /etc/udev/rules.d/70-persistent-net.rules
 ```
-
-Make it executable:
-
+Edit this file with the following line:
 ```bash
-sudo chmod +x /usr/local/bin/set_monitor_mode.sh
+SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="8812", NAME="wlan1"
 ```
+From now on, plugging the wifi adapter into top left USB port on a Raspberry Pi 3 B+ will result in the wifi adapter having the network interface name 'wlan1'.
 
-2. **Create a systemd service** `/etc/systemd/system/set_monitor_mode.service`:
-
-```ini
-[Unit]
-Description=Set wlan1 to monitor mode
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/set_monitor_mode.sh
-RemainAfterExit=yes
-
-[Install]
-WantedBy=multi-user.target
-```
-
-3. **Enable and start the service:**
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable set_monitor_mode.service
-sudo systemctl start set_monitor_mode.service
-```
-
-4. **Reboot to test:**
-
-```bash
-sudo reboot
-```
-
-After reboot, verify monitor mode with:
-
-```bash
-iwconfig wlan1
-```
+### Set Raspbery Pi into monitor mode and start sniffing automatically on boot
+Check the folder `\pi` to see instructions.
 
 ### Update GIT repository
 Forget local changes:

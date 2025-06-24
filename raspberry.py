@@ -22,17 +22,7 @@ def main():
     time.sleep(60 - now.second)
         
     while True:
-        try:
-            crowd_data = get_crowd_data()
-        except Exception as e:
-            print(f"Error getting crowd data: {e}", flush=True)
-            print("Trying to set wlan1 interface to monitor mode...", flush=True)
-            subprocess.run(['ip', 'link', 'set', 'wlan1', 'down'])
-            subprocess.run(['iw', 'dev', 'wlan1', 'set', 'type', 'monitor'])
-            subprocess.run(['ip', 'link', 'set', 'wlan1', 'up'])
-            print("Waiting for 60 seconds before retrying...", flush=True)
-            time.sleep(60)
-            continue
+        crowd_data = get_crowd_data()
         
         # format the timestamp as 'YYYY-MM-DD HH:MM'
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
