@@ -5,6 +5,7 @@ __pycache__/
 
 playground.ipynb
 excel_key.json
+.streamlit/secrets.toml
 
 # C extensions
 *.so
