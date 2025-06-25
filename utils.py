@@ -4,13 +4,14 @@ from datetime import datetime, timedelta
 import gspread
 from gspread import Worksheet
 from oauth2client.service_account import ServiceAccountCredentials
+import math
 
 COLUMNS = ["device_name", "timestamp", "crowd_data"]
-SHEET_NAME = "data"
+SHEET_NAME = "synthetic_data" #"data" #"synthetic_data"
 DEVICE_POSITIONS = {
-    "device1": (1, 1),
-    "device2": (1, -1),
-    "device3": (-1, 1)
+    "census1": (55.631111, 12.124757),
+    "census2": (55.630866, 12.125152),
+    "census3": (55.631235, 12.125442)
 }
 
 
@@ -82,3 +83,38 @@ def write_data(data : dict | list[dict]) -> None:
     # convert data to a list of lists
     data = [list(item.values()) for item in data]
     sheet.append_rows(data, value_input_option='USER_ENTERED')
+
+
+
+
+
+_EARTH_R = 6_371_000.0  # mean Earth radius, metres
+_ORIGIN_LAT, _ORIGIN_LON = DEVICE_POSITIONS["census1"]
+_cos_lat0 = math.cos(math.radians(_ORIGIN_LAT))
+
+
+def ll_to_xy(lat: float, lon: float) -> tuple[float, float]:
+    """Approx. equirectangular projection, metres east/north of origin."""
+    dx = _EARTH_R * math.radians(lon - _ORIGIN_LON) * _cos_lat0
+    dy = _EARTH_R * math.radians(lat - _ORIGIN_LAT)
+    return dx, dy
+
+
+def xy_to_ll(x: float, y: float) -> tuple[float, float]:
+    """Inverse of `ll_to_xy`."""
+    lat = _ORIGIN_LAT + (y / _EARTH_R) * (180 / math.pi)
+    lon = _ORIGIN_LON + (x / (_EARTH_R * _cos_lat0)) * (180 / math.pi)
+    return lat, lon
+
+
+# Pre-project device sites once – used by the dashboard
+DEVICE_POSITIONS_XY = {
+    d: ll_to_xy(*ll) for d, ll in DEVICE_POSITIONS.items()
+}
+
+
+def rssi_to_distance(rssi : float, N : float, measured_power : float) -> float:
+    # rssi = Received Signal Strength Indicator
+    # N = device constat, usually between 2 and 4, 2 for free space, 3 for urban areas, 4 for indoor
+    # measured_power = RSSI at 1 meter distance, needs to be calibrated for each device, around -16
+    return 10 ** ((measured_power - rssi) / (10 * N))
