@@ -3,6 +3,8 @@ sudo chmod +x /usr/local/bin/start_wifi_sniffer.sh
 
 sudo cp pi/wifi-sniffer.service /etc/systemmd/system/wifi-sniffer.service
 
+# remember to change the path (census1) to the correct path
+
 # activate the service
 sudo systemctl daemon-reload
 sudo systemctl enable wifi-sniffer.service

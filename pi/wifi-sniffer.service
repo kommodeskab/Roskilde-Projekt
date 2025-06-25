@@ -13,4 +13,4 @@ Restart=on-failure
 RestartSec=5
 
 [Install]
-WantedBy=multi-user.target # Ensures the service starts when the system enters multi-user mode
+WantedBy=multi-user.target
