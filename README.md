@@ -198,3 +198,22 @@ Then pull new changes from main:
 ```bash
 gil pull
 ```
+
+### Turn off undervoltage warning
+Since we are using alternative power sources (for example powerbanks), we will get a lot of warnings in the command line on the raspberry:
+```bash
+hwmon hwmon1: Undervoltage detected!
+```
+This can be a serious pain when writing stuff in the terminal. The warning can be turned off in the following way:
+```bash
+sudo nano /etc/modprobe.d/blacklist-undervoltage.conf
+```
+Add this line:
+```bash
+blacklist raspberry_hwmon
+```
+Make changes go into effect:
+```bash
+sudo update-initramfs -u
+reboot
+```

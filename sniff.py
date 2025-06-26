@@ -9,6 +9,9 @@ SCAN_DURATION = 50  # seconds
 
 def hash_mac(mac : str) -> str:
     """Hash a MAC address using SHA-256 and return as hex string"""
+    if mac == "28:C2:1F:06:7D:39":
+        return "Andreas"
+     
     return hashlib.sha256(mac.encode()).hexdigest()
 
 def packet_handler(pkt : Packet, device_rssi : dict) -> None:
