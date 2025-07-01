@@ -6,7 +6,7 @@ from sniff import sniff_packets
 import sys
 
 def get_crowd_data() -> dict[str, int]:
-    interface = 'wlan1' 
+    interface = 'alfa' 
     scan_duration = 60 
     return sniff_packets(interface, scan_duration)    
 
