@@ -24,11 +24,19 @@ def main():
     while True:
         try:
             crowd_data = get_crowd_data()
+            
         except OSError as e:
             print(f"Error sniffing packets: {e}", flush=True)
             sys.exit(1)
+            
         except Exception as e:
             print(f"Unexpected error: {e}", flush=True)
+            sys.exit(1)
+            
+        if len(crowd_data) == 0:
+            # if no data is found, it is most likely because the interface is not in monitor mode
+            # exiting the script allows the raspberry to set the interface to monitor mode again
+            print("No data found, trying a restart...", flush=True)
             sys.exit(1)
         
         # format the timestamp as 'YYYY-MM-DD HH:MM'

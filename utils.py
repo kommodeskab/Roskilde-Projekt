@@ -7,11 +7,11 @@ from oauth2client.service_account import ServiceAccountCredentials
 import math
 
 COLUMNS = ["device_name", "timestamp", "crowd_data"]
-SHEET_NAME = "synthetic_data" #"data" #"synthetic_data"
+SHEET_NAME = "data" #"data" #"synthetic_data"
 DEVICE_POSITIONS = {
-    "census1": (55.631111, 12.124757),
-    "census2": (55.630866, 12.125152),
-    "census3": (55.631235, 12.125442)
+    "census1": (55.84697864064483, 12.527829569730192),
+    "census2": (55.84698202870734, 12.527924788142869),
+    "census3": (55.84698729902622, 12.528038111464998)
 }
 
 
