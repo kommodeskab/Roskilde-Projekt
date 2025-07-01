@@ -1,10 +1,11 @@
-# dashboard.py  –  Streamlit app for RF crowd monitoring
+# dashboard.py – Streamlit app for RF crowd monitoring
 # ---------------------------------------------------------------------------
 # • NEW: Lets the user choose an arbitrary start & end date *and* time
 #   window, instead of a single-day drop-down.
 # • RSSI→distance helper from utils.py
 # • Projects device locations to local (x, y) metres for triangulation
 # • Converts results back to lat/lon and renders a PyDeck heat-map
+# • NEW (2025‑07‑01): “Unique (across devices)” crowd‑count mode
 # ---------------------------------------------------------------------------
 
 from __future__ import annotations
@@ -46,7 +47,7 @@ plt.rcParams["savefig.facecolor"] = "white"
 # ---------------------------------------------------------------------------
 @st.cache_data(ttl=600, show_spinner=False)
 def read_data() -> pd.DataFrame:
-    """Fetch Google-Sheet records and prepare a tidy DataFrame."""
+    """Fetch Google‑Sheet records and prepare a tidy DataFrame."""
     sheet = get_sheet()
     data = sheet.get_all_records()
     if not data:
@@ -54,7 +55,7 @@ def read_data() -> pd.DataFrame:
 
     df = pd.DataFrame(data, columns=COLUMNS)
 
-    # safely parse the crowd_data column (string-ified dict)
+    # safely parse the crowd_data column (string‑ified dict)
     def parse_crowd(x):
         if pd.isna(x) or not isinstance(x, str) or x.strip() == "":
             return {}
@@ -87,7 +88,7 @@ if data.empty:
 devices = sorted(data["device_name"].unique())
 selected_devices = st.sidebar.multiselect("Select device(s)", devices, default=devices)
 
-# ---- NEW: Date & time range pickers ---------------------------------------
+# ---- Date & time range pickers -------------------------------------------
 min_date = data["timestamp"].dt.date.min()
 max_date = data["timestamp"].dt.date.max()
 
@@ -108,8 +109,8 @@ if start_dt > end_dt:
 plot_type = st.sidebar.radio("Visualization", ["Crowd Count", "Triangulated Positions"])
 
 st.sidebar.markdown("### RSSI calibration")
-N = st.sidebar.slider("Path-loss exponent (N)", 2.0, 4.0, 3.0, 0.1)
-measured_power = st.sidebar.number_input("Measured power @ 1 m (dBm)", value=-16.0, step=0.5)
+N = st.sidebar.slider("Path‑loss exponent (N)", 2.0, 4.0, 3.0, 0.1)
+measured_power = st.sidebar.number_input("Measured power @ 1 m (dBm)", value=-16.0, step=0.5)
 
 # ---------------------------------------------------------------------------
 # Data subset for the chosen period
@@ -125,19 +126,21 @@ if df.empty:
     st.stop()
 
 # ---------------------------------------------------------------------------
-# Branch 1 – crowd-count time-series
+# Branch 1 – crowd‑count time‑series
 # ---------------------------------------------------------------------------
 if plot_type == "Crowd Count":
-    mode = st.sidebar.radio("Show as", ["Individual", "Total"])
-
-    print(df["timestamp"].dtype)          # should say datetime64[ns, XXX]
-    print(df["timestamp"].dt.tz)          # see the actual zone
-
+    mode = st.sidebar.radio(
+        "Show as",
+        ["Individual", "Total", "Unique (across devices)"],
+        index=0,
+    )
 
     def moving_avg(series: pd.Series, w: int = 5) -> pd.Series:
         return series.rolling(window=w, min_periods=1).mean()
 
     fig, ax = plt.subplots()
+
+    # ────────────────────────────────────────────────────────────────────
     if mode == "Individual":
         for dev in selected_devices:
             dev_df = df[df["device_name"] == dev]
@@ -145,19 +148,35 @@ if plot_type == "Crowd Count":
                 continue
             xs = dev_df["timestamp"]
             ys = moving_avg(dev_df["crowd_count"], 10).round()
-            # break gaps longer than 10 min
+            # break gaps longer than 10 min
             mask = dev_df["timestamp"].diff() < timedelta(minutes=10)
             ax.fill_between(xs, ys, alpha=0.6, label=dev, where=mask)
-    else:
+
+    # ────────────────────────────────────────────────────────────────────
+    elif mode == "Total":
         summed = df.groupby("timestamp")["crowd_count"].sum().reset_index()
         xs = summed["timestamp"]
         ys = moving_avg(summed["crowd_count"], 10).round()
         mask = summed["timestamp"].diff() < timedelta(minutes=10)
         ax.fill_between(xs, ys, alpha=0.6, label="Total", where=mask)
 
+    # ────────────────────────────────────────────────────────────────────
+    else:  # mode == "Unique (across devices)"
+        # For each timestamp, count the union of MACs seen by any selected device
+        unique_counts = (
+            df.groupby("timestamp")["crowd_data"]
+            .apply(lambda s: len({mac for d in s for mac in d.keys()}))
+            .reset_index(name="unique_count")
+        )
+        xs = unique_counts["timestamp"]
+        ys = moving_avg(unique_counts["unique_count"], 10).round()
+        mask = unique_counts["timestamp"].diff() < timedelta(minutes=10)
+        ax.fill_between(xs, ys, alpha=0.6, label="Unique", where=mask)
+
+    # ────────────────────────────────────────────────────────────────────
     ax.set_xlabel("Time")
-    ax.set_ylabel("Crowd count (moving-avg)")
-    ax.set_title(f"Crowd Count\n{start_dt:%Y-%m-%d %H:%M} → {end_dt:%Y-%m-%d %H:%M}")
+    ax.set_ylabel("Crowd count (moving‑avg)")
+    ax.set_title(f"Crowd Count\n{start_dt:%Y‑%m‑%d %H:%M} → {end_dt:%Y‑%m‑%d %H:%M}")
     ax.legend(loc="upper right")
     plt.tight_layout()
     fig.subplots_adjust(bottom=0.2, left=0.1)
@@ -166,7 +185,7 @@ if plot_type == "Crowd Count":
     components.html(mpld3.fig_to_html(fig), height=600)
 
 # ---------------------------------------------------------------------------
-# Branch 2 – triangulated positions with heat-map
+# Branch 2 – triangulated positions with heat‑map
 # ---------------------------------------------------------------------------
 else:  # plot_type == "Triangulated Positions"
     positions: list[dict] = []
@@ -213,7 +232,7 @@ else:  # plot_type == "Triangulated Positions"
     # --------------------------------------  visualise
     if not positions:
         st.warning(
-            "No triangulated positions found - need three overlapping devices at the "
+            "No triangulated positions found – need three overlapping devices at the "
             "same timestamp and matching `device_name` entries in `DEVICE_POSITIONS`."
         )
     else:
@@ -237,6 +256,6 @@ else:  # plot_type == "Triangulated Positions"
         )
 
         st.subheader(
-            f"Crowd density heat-map\n{start_dt:%Y-%m-%d %H:%M} → {end_dt:%Y-%m-%d %H:%M}"
+            f"Crowd density heat‑map\n{start_dt:%Y‑%m‑%d %H:%M} → {end_dt:%Y‑%m‑%d %H:%M}"
         )
         st.pydeck_chart(pdk.Deck(layers=[heat_layer], initial_view_state=view))
