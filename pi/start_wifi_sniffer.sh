@@ -9,9 +9,6 @@ echo "$(date): Starting Wi-Fi sniffer setup..." >> "$LOG_FILE"
 PROJECT_DIR="/home/$PYTHON_DEVICE_NAME/Roskilde-Projekt/"
 echo "$(date): Project directory set to $PROJECT_DIR." >> "$LOG_FILE"
 
-git config --global --add safe.directory "$PROJECT_DIR" >> "$LOG_FILE" 2>&1
-git pull >> "$LOG_FILE" 2>&1
-
 # try to put alfa into monitor mode
 ip link set alfa down >> "$LOG_FILE" 2>&1
 iw dev alfa set type monitor >> "$LOG_FILE" 2>&1
@@ -28,6 +25,7 @@ fi
 echo "$(date): Successfully set alfa to monitor mode." >> "$LOG_FILE"
 
 cd "$PROJECT_DIR" >> "$LOG_FILE" 2>&1
+git pull >> "$LOG_FILE" 2>&1
 echo "$(date): Changed directory to $PROJECT_DIR." >> "$LOG_FILE"
 
 VENV_PYTHON="$PROJECT_DIR/.venv/bin/python"
