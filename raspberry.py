@@ -36,8 +36,6 @@ def split_dict_by_max_length(input_dict : dict, max_length : int) -> list[dict]:
     
     if current_chunk:
         result.append(current_chunk)
-        
-    result = [str(chunk) for chunk in result]
     
     return result   
 
@@ -85,7 +83,7 @@ def main():
             {
             "device_name": device_name,
             "timestamp": timestamp,
-            "crowd_data": d,
+            "crowd_data": str(d),
             } 
             for d in crowd_data
             ]
@@ -96,11 +94,9 @@ def main():
             print(f"Error writing data: {e}", flush=True)
             sys.exit(1)
         
-        print(f"Data written at {timestamp} with lengths:", flush=True)
+        print(f"Data written at {timestamp} with number of people (per write):", flush=True)
         for d in crowd_data:
-            print(f"  {len(d)} characters", flush=True)
-            
-        exit()
+            print(f"  {len(d)}", flush=True)
         
 if __name__ == "__main__":
     main()
