@@ -3,12 +3,12 @@ from scapy.all import sniff, Dot11
 from scapy.packet import Packet
 from functools import partial
 
-def hash_mac(mac : str) -> str:
-    """Hash a MAC address using SHA-256 and return as hex string"""
-    if mac == "28:C2:1F:06:7D:39":
-        return "Andreas"
-     
-    return hashlib.sha256(mac.encode()).hexdigest()
+def hash_mac(mac : str) -> str:    
+    hashed = hashlib.sha256(mac.encode()).hexdigest()
+    # cap the hash at 6 characters
+    hashed = hashed[:6]
+    
+    return hashed
 
 def packet_handler(pkt : Packet, device_rssi : dict) -> None:
     if pkt.haslayer(Dot11) and pkt.type == 0:  # management frame

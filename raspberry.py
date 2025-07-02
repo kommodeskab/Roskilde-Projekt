@@ -6,10 +6,40 @@ from sniff import sniff_packets
 import sys
 
 SCAN_DURATION = 300
+MAX_LENGTH = 49_000
+
+def dummy_data() -> dict[str, int]:
+    import random
+    abc = "abcdefghijklmnopqrstuvwxyz"
+    def random_string(length=5):
+        return ''.join(random.choices(abc, k=length))
+
+    return {random_string(length=6) : -10 for _ in range(10000)}
 
 def get_crowd_data(scan_duration : int) -> dict[str, int]:
     interface = 'alfa' 
-    return sniff_packets(interface, scan_duration)    
+    return sniff_packets(interface, scan_duration) 
+    # return dummy_data()
+
+def split_dict_by_max_length(input_dict : dict, max_length : int) -> list[dict]:
+    result = []
+    current_chunk = {}
+    
+    for key, value in input_dict.items():
+        temp_chunk = current_chunk.copy()
+        temp_chunk[key] = value
+        if len(str(temp_chunk)) > max_length:
+            result.append(current_chunk)
+            current_chunk = {key: value}
+        else:
+            current_chunk = temp_chunk
+    
+    if current_chunk:
+        result.append(current_chunk)
+        
+    result = [str(chunk) for chunk in result]
+    
+    return result   
 
 def main():
     parser = ArgumentParser()
@@ -48,11 +78,17 @@ def main():
         # format the timestamp as 'YYYY-MM-DD HH:MM'
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
         
-        data = {
+        # this is a list of strings to be logged
+        crowd_data = split_dict_by_max_length(crowd_data, MAX_LENGTH)
+        
+        data = [
+            {
             "device_name": device_name,
             "timestamp": timestamp,
-            "crowd_data": str(crowd_data)
-        }
+            "crowd_data": d,
+            } 
+            for d in crowd_data
+            ]
         
         try:
             write_data(data)
@@ -60,7 +96,11 @@ def main():
             print(f"Error writing data: {e}", flush=True)
             sys.exit(1)
         
-        print(f"Data written at {timestamp}: {crowd_data}", flush=True)
+        print(f"Data written at {timestamp} with lengths:", flush=True)
+        for d in crowd_data:
+            print(f"  {len(d)} characters", flush=True)
+            
+        exit()
         
 if __name__ == "__main__":
     main()

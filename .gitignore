@@ -6,6 +6,7 @@ __pycache__/
 playground.ipynb
 excel_key.json
 mac_addresses.json
+sandkasse.ipynb
 .streamlit/secrets.toml
 
 # C extensions
