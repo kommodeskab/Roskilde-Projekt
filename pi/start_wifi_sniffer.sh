@@ -26,7 +26,6 @@ echo "$(date): Successfully set alfa to monitor mode." >> "$LOG_FILE"
 
 cd "$PROJECT_DIR" >> "$LOG_FILE" 2>&1
 echo "$(date): Changed directory to $PROJECT_DIR." >> "$LOG_FILE"
-git pull >> "$LOG_FILE" 2>&1
 
 VENV_PYTHON="$PROJECT_DIR/.venv/bin/python"
 echo "$(date): Found virtual environment Python: $VENV_PYTHON" >> "$LOG_FILE"
