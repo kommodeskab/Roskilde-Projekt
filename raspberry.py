@@ -25,6 +25,8 @@ def main():
         print("No data found during dummy trial, restarting...", flush=True)
         sys.exit(1)
         
+    print("Dummy trial successful, starting main loop...", flush=True)
+        
     while True:
         try:
             crowd_data = get_crowd_data(SCAN_DURATION)
