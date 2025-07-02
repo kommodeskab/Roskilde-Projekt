@@ -2,13 +2,15 @@
 
 PYTHON_DEVICE_NAME="census1"
 
-
 LOG_FILE="/var/log/wifi_sniffer_startup.log"
 
 echo "$(date): Starting Wi-Fi sniffer setup..." >> "$LOG_FILE"
 
 PROJECT_DIR="/home/$PYTHON_DEVICE_NAME/Roskilde-Projekt/"
 echo "$(date): Project directory set to $PROJECT_DIR." >> "$LOG_FILE"
+
+git pull >> "$LOG_FILE" 2>&1
+echo "$(date): Pulled latest changes from Git repository." >> "$LOG_FILE"
 
 # try to put alfa into monitor mode
 ip link set alfa down >> "$LOG_FILE" 2>&1

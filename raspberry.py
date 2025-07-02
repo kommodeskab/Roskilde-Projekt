@@ -5,9 +5,10 @@ from datetime import datetime
 from sniff import sniff_packets
 import sys
 
-def get_crowd_data() -> dict[str, int]:
+SCAN_DURATION = 300
+
+def get_crowd_data(scan_duration : int) -> dict[str, int]:
     interface = 'alfa' 
-    scan_duration = 60 
     return sniff_packets(interface, scan_duration)    
 
 def main():
@@ -17,14 +18,17 @@ def main():
     args = parser.parse_args()
     device_name : str = args.device_name
     
-    now = datetime.now()
-    print(f"Waiting {60 - now.second} seconds until the next minute begins...", flush=True)
-    time.sleep(60 - now.second)
+    # start by sniffing for 30 seconds
+    # if no devies are picked up, we exit the script
+    dummy_data = get_crowd_data(30)
+    if len(dummy_data) == 0:
+        print("No data found during dummy trial, restarting...", flush=True)
+        sys.exit(1)
         
     while True:
         try:
-            crowd_data = get_crowd_data()
-            
+            crowd_data = get_crowd_data(SCAN_DURATION)
+                    
         except OSError as e:
             print(f"Error sniffing packets: {e}", flush=True)
             sys.exit(1)
