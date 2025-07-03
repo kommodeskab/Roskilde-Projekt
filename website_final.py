@@ -130,8 +130,16 @@ if plot_type == "Crowd Count":
         horizontal=True,
     )
     # ... (The entire crowd-count plotting logic remains exactly the same) ...
-    def moving_avg(series: pd.Series, w: int = 5) -> pd.Series:
-        return series.rolling(window=w, min_periods=1).mean()
+    def moving_avg(series: pd.Series,
+               window: str = "30min") -> pd.Series:
+        """
+        Mean over the **last 30 min**, irrespective of how many
+        samples that is.
+        """
+        # Make sure the index is the timestamp and monotonic
+        s = series.sort_index()
+        return s.rolling(window=window, min_periods=1).mean()
+
 
     fig, ax = plt.subplots()
 
@@ -141,7 +149,7 @@ if plot_type == "Crowd Count":
             if dev_df.empty: continue
             xs = dev_df["timestamp"]
             ys = moving_avg(dev_df["crowd_count"], 10).round()
-            mask = dev_df["timestamp"].diff() < timedelta(minutes=10)
+            mask = dev_df["timestamp"].diff() < timedelta(minutes=15)
             ax.fill_between(xs, ys, alpha=0.6, label=dev, where=mask)
     elif mode == "Total":
         summed = df.groupby("timestamp")["crowd_count"].sum().reset_index()
