@@ -91,6 +91,10 @@ def main():
     for d in crowd_data:
         print(f"  {len(d)}", flush=True)
         
+    # even on succes, exit with a non-zero code to allow the raspberry to restart the script
+    # and scan again
+    sys.exit(1)
+        
 if __name__ == "__main__":
     main()
         
