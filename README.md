@@ -154,25 +154,38 @@ reboot
 ```
 Test if WiFi adapter can go into monitor mode:
 ```bash
-sudo ip link set wlan1 down
-sudo iw dev wlan1 set type monitor
-sudo ip link set wlan1 up
+sudo ip link set alfa down
+sudo iw dev alfa set type monitor
+sudo ip link set alfa up
 ```
 
-### Make sure that Wifi Adapter always have name 'wlan1'
+### Make sure that Wifi Adapter always have name 'alfa'
 ```bash
 sudo nano /etc/udev/rules.d/70-persistent-net.rules
 ```
 Edit this file with the following line:
 ```bash
-SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="8812", NAME="wlan1"
+SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="8812", NAME="alfa"
 ```
+Also, make a file for disabling power saving:
+```bash
+sudo nano /etc/udev/rules.d/80-usb-power.rules
+```
+In here, write:
+```bash
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="8812", ATTR{power/autosuspend}="-1"
+```
+Another way to (potentially) disable power saving:
+```bash
+sudo iwconfig alfa power off
+```
+
 Then, update to make changes active:
 ```bash
 sudo udevadm control --reload-rules
 sudo udevadm trigger
 ```
-From now on, plugging the wifi adapter into top left USB port on a Raspberry Pi 3 B+ will result in the wifi adapter having the network interface name 'wlan1'.
+From now on, plugging the wifi adapter into top left USB port on a Raspberry Pi 3 B+ will result in the wifi adapter having the network interface name 'alfa'.
 
 ### Check error messages of sniffer
 ```bash

@@ -11,6 +11,7 @@ echo "$(date): Project directory set to $PROJECT_DIR." >> "$LOG_FILE"
 
 # try to put alfa into monitor mode
 ip link set alfa down >> "$LOG_FILE" 2>&1
+iw dev alfa set power_save off >> "$LOG_FILE" 2>&1
 iw dev alfa set type monitor >> "$LOG_FILE" 2>&1
 ip link set alfa up >> "$LOG_FILE" 2>&1
 
