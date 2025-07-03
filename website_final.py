@@ -44,14 +44,14 @@ from utils import (
 # ---------------------------------------------------------------------------
 st.set_page_config(page_title="Crowd Monitoring Dashboard", layout="wide")
 st.title("Crowd Monitoring Dashboard")
-st_autorefresh(interval=60_000, key="dashboard_refresher")
+st_autorefresh(interval=300_000, key="dashboard_refresher")
 plt.style.use("default")
 # ... (Matplotlib rcParams setup remains the same) ...
 
 # ---------------------------------------------------------------------------
 # Data loading (cached for 10 min)
 # ---------------------------------------------------------------------------
-@st.cache_data(ttl=50, show_spinner="Fetching latest data...")
+@st.cache_data(ttl=250, show_spinner="Fetching latest data...")
 def read_data() -> pd.DataFrame:
     """Fetch Google‑Sheet records and prepare a tidy DataFrame."""
     sheet = get_sheet()
