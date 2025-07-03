@@ -7,7 +7,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import math
 
 COLUMNS = ["device_name", "timestamp", "crowd_data"]
-SHEET_NAME = "synthetic_data" #"data" #"synthetic_data"
+SHEET_NAME = "data" #"data" #"synthetic_data"
 DEVICE_POSITIONS = {
     "census1": (55.631111, 12.124757),
     "census2": (55.630866, 12.125152),
@@ -93,24 +93,29 @@ _ORIGIN_LAT, _ORIGIN_LON = DEVICE_POSITIONS["census1"]
 _cos_lat0 = math.cos(math.radians(_ORIGIN_LAT))
 
 
-def ll_to_xy(lat: float, lon: float) -> tuple[float, float]:
-    """Approx. equirectangular projection, metres east/north of origin."""
-    dx = _EARTH_R * math.radians(lon - _ORIGIN_LON) * _cos_lat0
-    dy = _EARTH_R * math.radians(lat - _ORIGIN_LAT)
+def ll_to_xy(lat: float, lon: float, origin_lat: float, origin_lon: float) -> tuple[float, float]:
+    """Approx. equirectangular projection, metres east/north of a dynamic origin."""
+    # Calculate cosine of the origin latitude inside the function
+    cos_lat0 = math.cos(math.radians(origin_lat))
+    
+    # Calculate distance based on the provided origin
+    dx = _EARTH_R * math.radians(lon - origin_lon) * cos_lat0
+    dy = _EARTH_R * math.radians(lat - origin_lat)
     return dx, dy
 
 
-def xy_to_ll(x: float, y: float) -> tuple[float, float]:
-    """Inverse of `ll_to_xy`."""
-    lat = _ORIGIN_LAT + (y / _EARTH_R) * (180 / math.pi)
-    lon = _ORIGIN_LON + (x / (_EARTH_R * _cos_lat0)) * (180 / math.pi)
+def xy_to_ll(x: float, y: float, origin_lat: float, origin_lon: float) -> tuple[float, float]:
+    """Inverse of the dynamic `ll_to_xy`."""
+    # Calculate cosine of the origin latitude inside the function
+    cos_lat0 = math.cos(math.radians(origin_lat))
+    
+    # Calculate lat/lon based on the provided origin
+    lat = origin_lat + (y / _EARTH_R) * (180 / math.pi)
+    lon = origin_lon + (x / (_EARTH_R * cos_lat0)) * (180 / math.pi)
     return lat, lon
 
 
-# Pre-project device sites once – used by the dashboard
-DEVICE_POSITIONS_XY = {
-    d: ll_to_xy(*ll) for d, ll in DEVICE_POSITIONS.items()
-}
+
 
 
 def rssi_to_distance(rssi : float, N : float, measured_power : float) -> float:
