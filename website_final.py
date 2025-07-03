@@ -51,7 +51,7 @@ plt.style.use("default")
 # ---------------------------------------------------------------------------
 # Data loading (cached for 10 min)
 # ---------------------------------------------------------------------------
-@st.cache_data(ttl=600, show_spinner="Fetching latest data...")
+@st.cache_data(ttl=50, show_spinner="Fetching latest data...")
 def read_data() -> pd.DataFrame:
     """Fetch Google‑Sheet records and prepare a tidy DataFrame."""
     sheet = get_sheet()
