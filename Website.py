@@ -79,11 +79,13 @@ def parse_dict_string(dict_string: str) -> dict:
 
 @st.cache_data(ttl=250, show_spinner="Fetching latest data…")
 def read_data() -> pd.DataFrame:
+    """Fetch Google-Sheet records and prepare a tidy DataFrame."""
     sheet = get_sheet()
     data = sheet.get_all_records()
     
     if not data:
         return pd.DataFrame(columns=COLUMNS)
+
 
     df = pd.DataFrame(data, columns=COLUMNS)
 

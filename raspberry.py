@@ -5,10 +5,31 @@ from datetime import datetime
 from sniff import sniff_packets
 import sys
 
-def get_crowd_data() -> dict[str, int]:
-    interface = 'wlan1' 
-    scan_duration = 60 
-    return sniff_packets(interface, scan_duration)    
+DUMMY_TIME = 15
+SCAN_DURATION = 300
+MAX_LENGTH = 49_000
+
+def get_crowd_data(scan_duration : int) -> dict[str, int]:
+    interface = 'alfa' 
+    return sniff_packets(interface, scan_duration) 
+
+def split_dict_by_max_length(input_dict : dict, max_length : int) -> list[dict]:
+    result = []
+    current_chunk = {}
+    
+    for key, value in input_dict.items():
+        temp_chunk = current_chunk.copy()
+        temp_chunk[key] = value
+        if len(str(temp_chunk)) > max_length:
+            result.append(current_chunk)
+            current_chunk = {key: value}
+        else:
+            current_chunk = temp_chunk
+    
+    if current_chunk:
+        result.append(current_chunk)
+    
+    return result   
 
 def main():
     parser = ArgumentParser()
@@ -17,28 +38,48 @@ def main():
     args = parser.parse_args()
     device_name : str = args.device_name
     
-    now = datetime.now()
-    print(f"Waiting {60 - now.second} seconds until the next minute begins...", flush=True)
-    time.sleep(60 - now.second)
-        
-    while True:
+    print("Testing sniffer...", flush = True)
+    dummy_crowd_data = get_crowd_data(DUMMY_TIME)
+    if len(dummy_crowd_data) == 0:
+        print("Sniffer did not return any data on test, exiting...", flush=True)
+        sys.exit(1)
+    
+    print("Sniffer test successful", flush=True)
+    print(f"Starting sniffing on {device_name} for {SCAN_DURATION} seconds...", flush=True)
+    
+    while True:    
         try:
-            crowd_data = get_crowd_data()
+            crowd_data = get_crowd_data(SCAN_DURATION)
+                    
         except OSError as e:
             print(f"Error sniffing packets: {e}", flush=True)
             sys.exit(1)
+            
         except Exception as e:
             print(f"Unexpected error: {e}", flush=True)
+            sys.exit(1)
+            
+        if len(crowd_data) == 0:
+            # if no data is found, it is most likely because the interface is not in monitor mode
+            # exiting the script allows the raspberry to set the interface to monitor mode again
+            print("No data found, trying a restart...", flush=True)
             sys.exit(1)
         
         # format the timestamp as 'YYYY-MM-DD HH:MM'
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
         
-        data = {
+        # this is a list of strings to be logged
+        # due to google sheets limitations, only 50,000 characters can be written at once
+        crowd_data_splitted = split_dict_by_max_length(crowd_data, MAX_LENGTH)
+        
+        data = [
+            {
             "device_name": device_name,
             "timestamp": timestamp,
-            "crowd_data": str(crowd_data)
-        }
+            "crowd_data": str(d),
+            } 
+            for d in crowd_data_splitted
+            ]
         
         try:
             write_data(data)
@@ -46,7 +87,9 @@ def main():
             print(f"Error writing data: {e}", flush=True)
             sys.exit(1)
         
-        print(f"Data written at {timestamp}: {crowd_data}", flush=True)
+        num_people = len(crowd_data)
+        print(f"Data written at {timestamp} with number of people: {num_people}", flush=True)
+        
         
 if __name__ == "__main__":
     main()

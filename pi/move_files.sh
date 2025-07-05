@@ -1,7 +1,12 @@
 sudo cp pi/start_wifi_sniffer.sh /usr/local/bin/start_wifi_sniffer.sh
 sudo chmod +x /usr/local/bin/start_wifi_sniffer.sh
 
+# write
+git config --global --add safe.directory /home/census1/Roskilde-Projekt
+
 sudo cp pi/wifi-sniffer.service /etc/systemmd/system/wifi-sniffer.service
+
+# remember to change the path (census1) to the correct path
 
 # activate the service
 sudo systemctl daemon-reload

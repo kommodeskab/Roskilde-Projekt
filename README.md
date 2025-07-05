@@ -54,9 +54,8 @@ pip install -r requirements.txt
 Install dependecies:
 ```bash
 sudo apt update
-sudo apt install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev git
+sudo apt install -y make build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev git pip
 sudo apt-upgrade -y
-sudo apt dist-upgrade -y
 ```
 
 Install PyEnv:
@@ -64,13 +63,19 @@ Install PyEnv:
 curl https://pyenv.run | bash
 ```
 
-Open `bashrc` and add some important stuff (to make sure that pyenv is always activated on boot):
+And add some important stuff (to make sure that pyenv is always activated on boot):
 ```bash
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init --path)"
-eval "$(pyenv init -)"
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+echo 'eval "$(pyenv init - bash)"' >> ~/.bashrc
 ```
+and likewise:
+```bash
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.profile
+echo '[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.profile
+echo 'eval "$(pyenv init - bash)"' >> ~/.profile
+```
+Reboot to make changes go into effect.
 
 Make sure following dependency is installed before installing python:
 ```bash
@@ -83,19 +88,6 @@ pyenv global 3.11
 pyenv --version
 ```
 This should print `3.11.13` as the currently installed python version. 
-
-Clone this repository and step into the project:
-```bash
-git clone https://github.com/kommodeskab/Roskilde-Projekt.git
-cd Roskilde-Projekt
-```
-
-Make a new virtual environment and install the dependecies:
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r raspberry_requirements.txt
-```
 
 ### Setting up git
 Make sure `git` is installed:
@@ -131,26 +123,69 @@ Likewise, sending files to the raspberry can be done by (for example):
 ```bash
  scp .\excel_key.json census1@192.168.0.65:/home/census1/Roskilde-Projekt
 ```
+Note: before running the above command, you will have to have made cloned the repository onto your raspberry. See below.
+
 See the IP address of the raspberry using:
 ```bash
 hostname -I
 ```
+### Cloning repository
+Clone this repository and step into the project:
+```bash
+git clone https://github.com/kommodeskab/Roskilde-Projekt.git
+cd Roskilde-Projekt
+```
 
+Make a new virtual environment and install the dependecies:
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r raspberry_requirements.txt
+```
 
-### Make sure that Wifi Adapter always have name 'wlan1'
+### Installing WiFi adapter drivers
+```bash
+sudo apt-get install dkms
+git clone https://github.com/aircrack-ng/rtl8812au
+cd rtl8812au
+make
+sudo make install
+reboot
+```
+Test if WiFi adapter can go into monitor mode:
+```bash
+sudo ip link set alfa down
+sudo iw dev alfa set type monitor
+sudo ip link set alfa up
+```
+
+### Make sure that Wifi Adapter always have name 'alfa'
 ```bash
 sudo nano /etc/udev/rules.d/70-persistent-net.rules
 ```
 Edit this file with the following line:
 ```bash
-SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="8812", NAME="wlan1"
+SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="8812", NAME="alfa"
 ```
+Also, make a file for disabling power saving:
+```bash
+sudo nano /etc/udev/rules.d/80-usb-power.rules
+```
+In here, write:
+```bash
+ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="8812", ATTR{power/autosuspend}="-1"
+```
+Another way to (potentially) disable power saving:
+```bash
+sudo iwconfig alfa power off
+```
+
 Then, update to make changes active:
 ```bash
 sudo udevadm control --reload-rules
 sudo udevadm trigger
 ```
-From now on, plugging the wifi adapter into top left USB port on a Raspberry Pi 3 B+ will result in the wifi adapter having the network interface name 'wlan1'.
+From now on, plugging the wifi adapter into top left USB port on a Raspberry Pi 3 B+ will result in the wifi adapter having the network interface name 'alfa'.
 
 ### Check error messages of sniffer
 ```bash
@@ -160,6 +195,13 @@ tail -f /var/log/wifi_sniffer_startup.log
 ### Set Raspbery Pi into monitor mode and start sniffing automatically on boot
 Check the folder `\pi` to see instructions.
 
+### Testing 4g
+To test the 4g connectivity, turn off the on-board wifi. Type:
+```bash
+sudo ip link set wlan0 down
+```
+In some rare instances, the on-board wifi is not called wlan0. Check this by typing `iwconfig`.
+
 ### Update GIT repository
 Forget local changes:
 ```bash
@@ -168,4 +210,23 @@ git reset --hard
 Then pull new changes from main:
 ```bash
 gil pull
+```
+
+### Turn off undervoltage warning
+Since we are using alternative power sources (for example powerbanks), we will get a lot of warnings in the command line on the raspberry:
+```bash
+hwmon hwmon1: Undervoltage detected!
+```
+This can be a serious pain when writing stuff in the terminal. The warning can be turned off in the following way:
+```bash
+sudo nano /etc/modprobe.d/blacklist-undervoltage.conf
+```
+Add this line:
+```bash
+blacklist raspberry_hwmon
+```
+Make changes go into effect:
+```bash
+sudo update-initramfs -u
+reboot
 ```
