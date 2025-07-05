@@ -44,18 +44,44 @@ from utils import (
 # ---------------------------------------------------------------------------
 st.set_page_config(page_title="Crowd Monitoring Dashboard", layout="wide")
 st.title("Crowd Monitoring Dashboard")
-st_autorefresh(interval=300_000, key="dashboard_refresher")
 plt.style.use("default")
 # (custom Matplotlib rcParams go here if needed)
 
 # ---------------------------------------------------------------------------
 # Data loading (cached for 10 min)
 # ---------------------------------------------------------------------------
+
+def parse_dict_string(dict_string: str) -> dict:
+    result_dict = {}
+    content = dict_string.strip().strip('{}')
+
+    if not content:
+        return result_dict
+
+    parts = content.split(', ')
+
+    for part in parts:
+        try:
+            key_str, value_str = part.split(': ', 1)
+        except ValueError:
+            continue
+
+        key = key_str.strip().strip("'")
+
+        try:
+            value = int(value_str.strip())
+        except ValueError:
+            continue
+
+        result_dict[key] = value
+
+    return result_dict
+
 @st.cache_data(ttl=250, show_spinner="Fetching latest data…")
 def read_data() -> pd.DataFrame:
-    """Fetch Google-Sheet records and prepare a tidy DataFrame."""
     sheet = get_sheet()
     data = sheet.get_all_records()
+    
     if not data:
         return pd.DataFrame(columns=COLUMNS)
 
@@ -65,19 +91,34 @@ def read_data() -> pd.DataFrame:
         if pd.isna(x) or not isinstance(x, str) or x.strip() == "":
             return {}
         try:
-            return ast.literal_eval(x)
+            return parse_dict_string(x)
         except (ValueError, SyntaxError):
             return {}
 
+    print("Parsing crowd data…")
     df["crowd_data"] = df["crowd_data"].apply(parse_crowd)
-    df["crowd_count"] = df["crowd_data"].apply(len)
 
+    print("Converting timestamps to datetime objects…")
     df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-    df = df.dropna(subset=["timestamp"]).sort_values("timestamp").reset_index(drop=True)
-    df = df[df["crowd_data"].apply(bool)]
+    
+    def merge_dicts(dicts):
+        merged = {}
+        for d in dicts:
+            merged.update(d)
+        return merged
 
+    df['time_bin'] = df['timestamp'].dt.floor('10T')
+
+    df = (
+        df.groupby(['device_name', 'time_bin'], as_index=False)
+        .agg({'crowd_data': merge_dicts})
+    )
+
+    # Optional: Rename 'time_bin' back to 'timestamp' if desired
+    df.rename(columns={'time_bin': 'timestamp'}, inplace=True)
+    df['crowd_count'] = df['crowd_data'].apply(len)
+    
     return df
-
 
 data = read_data()
 if data.empty:
@@ -177,7 +218,7 @@ if plot_type == "Crowd Count":
         )
         ys = moving_avg(summed, "30min").round()
         xs = ys.index
-        mask = xs.to_series().diff() < timedelta(minutes=10)
+        mask = xs.to_series().diff() < timedelta(minutes=15)
         ax.fill_between(xs, ys, alpha=0.6, label="Total", where=mask)
 
     else:  # Unique across devices
@@ -188,7 +229,7 @@ if plot_type == "Crowd Count":
         )
         ys = moving_avg(unique_series, "30min").round()
         xs = ys.index
-        mask = xs.to_series().diff() < timedelta(minutes=10)
+        mask = xs.to_series().diff() < timedelta(minutes=15)
         ax.fill_between(xs, ys, alpha=0.6, label="Unique", where=mask)
 
     ax.set_xlabel("Time")
